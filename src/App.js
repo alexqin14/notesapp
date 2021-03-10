@@ -6,9 +6,17 @@ import React, {
   , useReducer
 } from 'react';
 import { API } from 'aws-amplify';
-import { List } from 'antd';
+// import { List } from 'antd';
 import 'antd/dist/antd.css';
 import { listNotes } from './graphql/queries';
+
+import { v4 as uuid } from 'uuid'
+import { List, Input, Button } from 'antd'
+
+import { createNote as CreateNote 
+} from './graphql/mutations'
+
+const CLIENT_ID = uuid();
 
 const initialState = {
   notes: [],
@@ -26,9 +34,37 @@ const reducer =(state, action) =>{
     case 'ERROR':
       return { ...state
         , loading: true
-        , error: true }
+        , error: true };
   
+    case 'ADD_NOTE':
+        return {
+          ...state
+          , notes: [
+            action.note
+            , ...state.notes
+          ]
+        }
 
+
+    case 'RESET_FORM':
+      return {
+        ...state
+        , form: initialState.form
+      }
+
+  
+      
+    case 'SET_INPUT':
+      return {
+        ...state
+        , form: {
+          ...state.form
+          , [action.name]: action.value
+        }
+      }
+
+    
+          
       default:
       return {
       ...state
@@ -81,6 +117,55 @@ const App = () => {
     }
   };
 
+const createNote = async () => {
+  // destructuring... form
+  const { form } = state;
+  //lame form validation, but good enough
+  if (!form.name || !form.description) {
+      return alert('please enter a name and description')
+  }
+
+  const note = { 
+    ...form
+    , clientId: CLIENT_ID
+    , completed: false
+    , id: uuid() 
+  };
+  // optimistic dispatch, updates local app state before calling GraphQL mutation endpoint
+
+  dispatch({ 
+    type: 'ADD_NOTE'
+    // shorthand synatx for note: note
+    , note 
+  });
+  dispatch({ 
+    type: 'RESET_FORM' 
+  })
+
+  try {
+    await API.graphql({
+      query: CreateNote
+      , variables: { 
+        input: note 
+      }
+    });
+
+    console.log('successfully created note!')
+
+  } catch (err) {
+    console.log("error: ", err);
+  }
+};
+
+const onChange = (e) =>{
+  dispatch({ 
+    type: 'SET_INPUT'
+    , name: e.target.name
+    , value: e.target.value 
+  })
+
+}
+
   const renderItem = (item) => {
     return (
       <List.Item style={styles.item}>
@@ -95,12 +180,30 @@ const App = () => {
     <div 
       style={styles.container}
     >
-
-      <List
-      loading={state.loading}
-      dataSource={state.notes}
-      renderItem={renderItem}
-      />
+    <Input
+      onChange={onChange}
+      value={state.form.name}
+      placeholder="Enter Note Name"
+      name='name'
+      style={styles.input}
+    />
+    <Input
+      onChange={onChange}
+      value={state.form.description}
+      placeholder="Enter description"
+      name='description'
+      style={styles.input}
+    />
+    <Button
+      onClick={createNote}
+      type="primary"
+    >
+      Create Note</Button>
+    <List
+    loading={state.loading}
+    dataSource={state.notes}
+    renderItem={renderItem}
+    />
   </div>
   );
 }
