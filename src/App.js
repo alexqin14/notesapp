@@ -40,8 +40,8 @@ const reducer =(state, action) =>{
         return {
           ...state
           , notes: [
-            action.note
-            , ...state.notes
+            ...state.notes
+            ,action.note
           ]
         }
 
