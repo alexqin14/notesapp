@@ -19,6 +19,10 @@ import {
   , deleteNote as DeleteNote
 } from './graphql/mutations'
 
+import { 
+  onCreateNote 
+} from './graphql/subscriptions'
+
 const CLIENT_ID = uuid();
 
 const initialState = {
@@ -104,7 +108,30 @@ const App = () => {
   useEffect(
     //lamda  goes to fetchNotes funtion
     () => {
-    fetchNotes()
+    fetchNotes();
+    const subscription = API.graphql(
+      {
+      query: onCreateNote
+      }
+    ).subscribe(
+      {
+      next: noteData => {
+        // get the note from the subscription payload
+        console.log(noteData)
+        const note = noteData.value.data.onCreateNote
+
+        // bail if this instance of the app cause this sbuscription
+        if (CLIENT_ID === note.clientId) {
+          return;
+        }
+
+        // otherwise, update the state with the new note
+        dispatch({ type: 'ADD_NOTE'
+        , note 
+      })
+      }
+    })
+    return () => subscription.unsubscribe()
     }
     , []
   )
