@@ -13,7 +13,10 @@ import { listNotes } from './graphql/queries';
 import { v4 as uuid } from 'uuid'
 import { List, Input, Button } from 'antd'
 
-import { createNote as CreateNote 
+import { 
+
+  createNote as CreateNote 
+  , deleteNote as DeleteNote
 } from './graphql/mutations'
 
 const CLIENT_ID = uuid();
@@ -167,10 +170,40 @@ const onChange = (e) =>{
   })
 
 }
+const deleteNote = async (noteToDelete) => {
+  // optimistically update the state with the note removed
+  dispatch({ 
+    type: 'SET_NOTES'
+    , notes: state.notes.filter(x => x != noteToDelete)
+    //[...state.notes.filter(x => x != noteToDelete)
+    //] 
+  });
+  // call the backend to delete
+  try {
+    await API.graphql({
+      query: DeleteNote,
+      variables: { 
+        input: {
+          id: noteToDelete.id
+        }
+       }
+    })
+    //console.log('successfully deleted note!')
+  } catch (err) {
+    console.error(err)
+  }
 
+}
   const renderItem = (item) => {
     return (
-      <List.Item style={styles.item}>
+      <List.Item 
+      style={styles.item}
+      actions = {[
+        <p style={styles.p} 
+        onClick={() => deleteNote(item)}>Delete</p>
+      ]}
+      
+      >
         <List.Item.Meta
           title={item.name}
           description={item.description}
