@@ -83,6 +83,8 @@ const App = () => {
       dispatch({ 
         type: 'SET_NOTES'
         , notes: notesData.data.listNotes.items 
+       // , notes: notesData.data.listNotes.items.sort((a, b) => a.name > b.name ? 1 : -1) 
+       //sort notes wehn first read from the backend 
       });
     } 
     
